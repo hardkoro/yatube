@@ -1,12 +1,12 @@
 {% extends "common/base.html" %} 
 {% block title %}Последние обновления на сайте{% endblock %}
+{% block header %}Последние обновления на сайте{% endblock %}
 {% block content %}
-  <h1>Последние обновления на сайте<h1>
-
-  {% for post in page %}
-    {% include "post_list.html" %}
-    {% if not forloop.last %}<hr>{% endif %}
-  {% endfor %}
+  <div class="container">
+    {% for post in page %}
+      {% include "common/post_item.html" with post=post %}
+    {% endfor %}
+  </div>
 
   {% include "common/paginator.html" %}
 {% endblock %}

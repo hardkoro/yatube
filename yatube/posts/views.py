@@ -1,10 +1,10 @@
-from django.shortcuts import redirect, render, get_object_or_404
+from django.shortcuts import get_list_or_404, redirect, render, get_object_or_404
 from django.core.paginator import Paginator
 from django.contrib.auth import get_user_model
 from django.contrib.auth.decorators import login_required
 
-from .models import Post, Group
-from .forms import PostForm
+from .models import Post, Group, Comment
+from .forms import CommentForm, PostForm
 
 User = get_user_model()
 POSTS_PER_PAGE = 10
@@ -15,7 +15,7 @@ def index(request):
     paginator = Paginator(post_list, POSTS_PER_PAGE)
     page_number = request.GET.get('page')
     page = paginator.get_page(page_number)
-    return render(request, "index.html", {"page": page})
+    return render(request, 'index.html', {'page': page})
 
 
 def group_posts(request, slug):
@@ -24,7 +24,7 @@ def group_posts(request, slug):
     paginator = Paginator(post_list, POSTS_PER_PAGE)
     page_number = request.GET.get('page')
     page = paginator.get_page(page_number)
-    return render(request, "group.html", {"group": group, "page": page})
+    return render(request, 'group.html', {'group': group, 'page': page})
 
 
 def profile(request, username):
@@ -33,13 +33,34 @@ def profile(request, username):
     paginator = Paginator(post_list, POSTS_PER_PAGE)
     page_number = request.GET.get('page')
     page = paginator.get_page(page_number)
-    return render(request, 'profile.html', {"author": author, "page": page})
+    return render(request, 'profile.html', {'author': author, 'page': page})
 
 
 def post_view(request, username, post_id):
     author = get_object_or_404(User, username=username)
     post = get_object_or_404(Post, author__username=username, id=post_id)
-    return render(request, 'post.html', {"author": author, "post": post})
+    comments = get_list_or_404(Comment, post=post)
+
+    form = CommentForm(request.POST or None)
+
+    if form.is_valid():
+        comment = form.save(commit=False)
+        comment.author = request.user
+        comment.post = post
+        comment.save()
+
+        return redirect('post', username=username, post_id=post_id)
+    
+    return render(
+        request, 
+        'post.html', 
+        {
+            'author': author, 
+            'post': post,
+            'comments': comments,
+            'form': form
+        }
+    )
 
 
 @login_required
@@ -77,11 +98,28 @@ def post_edit(request, username, post_id):
 def page_not_found(request, exception):
     return render(
         request,
-        "misc/404.html",
-        {"path": request.path},
+        'misc/404.html',
+        {'path': request.path},
         status=404
     )
 
 
 def server_error(request):
-    return render(request, "misc/500.html", status=500)
+    return render(request, 'misc/500.html', status=500)
+
+
+@login_required
+def add_comment(request, username, post_id):
+    post = get_object_or_404(Post, author__username=username, id=post_id)
+
+    form = CommentForm(request.POST or None)
+
+    if form.is_valid():
+        comment = form.save(commit=False)
+        comment.author = request.user
+        comment.post = post
+        comment.save()
+
+        return redirect('post', username=username, post_id=post_id)
+
+    return render(request, 'common/comments.html', {'form': form})

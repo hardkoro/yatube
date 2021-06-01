@@ -52,6 +52,8 @@
             
             <small class="text-muted">{{ post.pub_date|date:"d M Y H:i" }}</small>
           </div>
+
+          {% include "common/comments.html" %}
         </div>
       </div>
     </div>
