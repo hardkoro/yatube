@@ -4,7 +4,7 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.cache import cache_page
 
-from .models import Post, Group
+from .models import Follow, Post, Group
 from .forms import CommentForm, PostForm
 
 User = get_user_model()
@@ -125,3 +125,26 @@ def add_comment(request, username, post_id):
         return redirect('post', username=username, post_id=post_id)
 
     return render(request, 'common/comments.html', {'form': form})
+
+
+@login_required
+def follow_index(request):
+    author = get_object_or_404(User, username=request.user.username)
+    post_list = author.following.all()
+    paginator = Paginator(post_list, POSTS_PER_PAGE)
+    page_number = request.GET.get('page')
+    page = paginator.get_page(page_number)
+    return render(request, 'follow.html', {'author': author, 'page': page})
+
+
+@login_required
+def profile_follow(request, username):
+    author = get_object_or_404(User, username=username)
+    Follow.objects.create(user=request.user, author=author)
+    return redirect('index')
+
+
+@login_required
+def profile_unfollow(request, username):
+    Follow.objects.filter(user=request.user, author__username=username).delete()
+    return redirect('index')

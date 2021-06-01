@@ -5,6 +5,8 @@
   <div class="container">
     {% load cache %}
     {% cache 500 index_page %}
+
+    {% include "common/menu.html" with index=True %}
     
     {% for post in page %}
       {% include "common/post_item.html" with post=post %}
