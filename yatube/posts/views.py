@@ -1,15 +1,17 @@
-from django.shortcuts import get_list_or_404, redirect, render, get_object_or_404
+from django.shortcuts import redirect, render, get_object_or_404
 from django.core.paginator import Paginator
 from django.contrib.auth import get_user_model
 from django.contrib.auth.decorators import login_required
+from django.views.decorators.cache import cache_page
 
-from .models import Post, Group, Comment
+from .models import Post, Group
 from .forms import CommentForm, PostForm
 
 User = get_user_model()
 POSTS_PER_PAGE = 10
 
 
+@cache_page(60 * 20)
 def index(request):
     post_list = Post.objects.all()
     paginator = Paginator(post_list, POSTS_PER_PAGE)
@@ -39,7 +41,7 @@ def profile(request, username):
 def post_view(request, username, post_id):
     author = get_object_or_404(User, username=username)
     post = get_object_or_404(Post, author__username=username, id=post_id)
-    comments = get_list_or_404(Comment, post=post)
+    comments = post.comments.all()
 
     form = CommentForm(request.POST or None)
 

@@ -3,9 +3,14 @@
 {% block header %}Последние обновления на сайте{% endblock %}
 {% block content %}
   <div class="container">
+    {% load cache %}
+    {% cache 500 index_page %}
+    
     {% for post in page %}
       {% include "common/post_item.html" with post=post %}
     {% endfor %}
+    
+    {% endcache %}
   </div>
 
   {% include "common/paginator.html" %}

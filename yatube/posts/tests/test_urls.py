@@ -1,4 +1,5 @@
 from .setup_tests import SetUpTests
+from django.core.cache import cache
 
 
 class URLTests(SetUpTests):
@@ -26,6 +27,7 @@ class URLTests(SetUpTests):
 
         for url, template in url_template_names.items():
             with self.subTest(url=url):
+                cache.clear()
                 response = self.authorized_creator_client.get(url)
                 self.assertTemplateUsed(response, template)
 

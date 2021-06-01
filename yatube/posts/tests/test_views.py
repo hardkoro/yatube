@@ -1,6 +1,8 @@
 from django.urls import reverse
 from django import forms
-
+from django.core.cache import cache
+from django.test import Client, TestCase
+import sys
 from .setup_tests import SetUpTests
 from posts.models import Group, Post
 from posts.views import POSTS_PER_PAGE
@@ -22,6 +24,7 @@ class PostPagesTests(SetUpTests):
 
         for template, reverse_name in templates_pages_names.items():
             with self.subTest(reverse_name=reverse_name):
+                cache.clear()
                 response = self.authorized_creator_client.get(reverse_name)
                 self.assertTemplateUsed(response, template)
 
@@ -35,6 +38,7 @@ class PostPagesTests(SetUpTests):
 
         for url in url_names:
             with self.subTest(url=url):
+                cache.clear()
                 response = self.authorized_creator_client.get(url)
                 first_post = response.context['page'][0]
                 self.assertEqual(PostPagesTests.post, first_post)
@@ -97,6 +101,7 @@ class NewPostViewTests(SetUpTests):
 
         for reverse_name in pages_names:
             with self.subTest(pages_names=pages_names):
+                cache.clear()
                 response = self.authorized_creator_client.get(reverse_name)
                 post = response.context.get('page').object_list[0]
                 self.assertEqual(post, self.post)
@@ -136,6 +141,7 @@ class PaginatorViewTests(SetUpTests):
             )
 
     def test_first_page_contains_ten_records(self):
+        """Первая страница пажинатора содержит POSTS_PER_PAGE записей."""
         pages_names = {
             reverse('index'),
             reverse('group', kwargs={'slug': self.group.slug}),
@@ -143,12 +149,35 @@ class PaginatorViewTests(SetUpTests):
         }
 
         for page in pages_names:
+            cache.clear()
             response = self.client.get(page)
             self.assertEqual(len(
                 response.context.get('page').object_list), POSTS_PER_PAGE)
 
     def test_second_page_contains_seven_records(self):
+        """Первая страница пажинатора содержит TOTAL_TEST_POSTS - 
+           POSTS_PER_PAGE + POST_CREATED_IN_SETUP записей."""
         response = self.client.get(reverse('index') + '?page=2')
         self.assertEqual(len(
             response.context.get('page').object_list),
             TOTAL_TEST_POSTS - POSTS_PER_PAGE + POST_CREATED_IN_SETUP)
+
+
+class CacheTests(SetUpTests):
+    def test_index_page_is_cached(self):
+        """Новая запись на главной странице появится только после сброса кэша."""
+        response = self.authorized_creator_client.get(reverse('index'))
+        first_post_before = response.context['page'][0]
+
+        self.post = Post.objects.create(
+            text='Тестовый пост для кэша',
+            author=self.creator
+        )
+
+        response = self.authorized_creator_client.get(reverse('index'))
+        self.assertEqual(response.context, None)
+
+        cache.clear()
+        response = self.authorized_creator_client.get(reverse('index'))
+        first_post_after = response.context['page'][0]
+        self.assertNotEqual(first_post_before, first_post_after)
