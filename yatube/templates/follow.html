@@ -1,18 +1,13 @@
 {% extends "common/base.html" %} 
-{% block title %}Последние обновления у подписантов{% endblock %}
-{% block header %}Последние обновления у подписантов{% endblock %}
+{% block title %}Последние обновления у зафолловенных пользователей{% endblock %}
+{% block header %}Последние обновления у зафолловенных пользователей{% endblock %}
 {% block content %}
   <div class="container">
-    {% load cache %}
-    {% cache 500 index_page %}
-
-    {% include "common/menu.html" with index=False %}
+    {% include "common/menu.html" with follow=True %}
     
     {% for post in page %}
       {% include "common/post_item.html" with post=post %}
     {% endfor %}
-    
-    {% endcache %}
   </div>
 
   {% include "common/paginator.html" with items=page paginator=paginator %}

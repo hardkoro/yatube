@@ -3,44 +3,7 @@
 {% block content %}
   <main role="main" class="container">
     <div class="row">
-      <div class="col-md-3 mb-3 mt-1">
-        <div class="card">
-          <div class="card-body">
-            <div class="h2">{{ author }}</div>
-            
-            <div class="h3 text-muted">@{{ author.username }}</div>
-          </div>
-           
-          <ul class="list-group list-group-flush">
-            <li class="list-group-item">
-              <div class="h6 text-muted">
-                Подписчиков: {{ author.followed.count }} <br />
-                Подписан: {{ author.following.count }}
-              </div>
-            </li>
-             
-            <li class="list-group-item">
-              <div class="h6 text-muted">Записей: {{ page.paginator.count }}</div>
-            </li>
-          </ul>
-
-          <li class="list-group-item">
-            {% if following %}
-              <a
-                class="btn btn-lg btn-light"
-                href="{% url 'profile_unfollow' author.username %}" role="button">
-                Отписаться
-              </a>
-            {% else %}
-              <a
-                class="btn btn-lg btn-primary"
-                href="{% url 'profile_follow' author.username %}" role="button">
-                Подписаться
-              </a>
-            {% endif %}
-          </li>
-        </div>
-      </div>
+      {% include "common/author.html" with author=author following=following %}
   
       {% for post in page %}
         {% include "common/post_item.html" with post=post %}

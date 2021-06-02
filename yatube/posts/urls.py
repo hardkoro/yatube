@@ -9,6 +9,8 @@ urlpatterns = [
     path("group/<slug:slug>/", views.group_posts, name="group"),
     # Добавление новой записи
     path('new/', views.new_post, name='new_post'),
+    # Записи зафолловенных юзеров
+    path("follow/", views.follow_index, name="follow_index"),
     # Профайл пользователя
     path('<str:username>/', views.profile, name='profile'),
     # Просмотр записи
@@ -23,7 +25,6 @@ urlpatterns = [
     # Добавление комментария
     path("<username>/<int:post_id>/comment/", views.add_comment, 
          name="add_comment"),
-    path("follow/", views.follow_index, name="follow_index"),
     path("<str:username>/follow/", views.profile_follow, name="profile_follow"), 
     path("<str:username>/unfollow/", views.profile_unfollow, name="profile_unfollow"),
 ]
