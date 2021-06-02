@@ -7,6 +7,8 @@
 
       <div class="col-md-9">
         {% include "common/post_item.html" with post=post %}
+      
+        {% include "common/comments.html" with username=post.author.username post_id=post.id %}
       </div>
     </div>
   </main>

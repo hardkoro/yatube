@@ -1,8 +1,7 @@
 from django.urls import reverse
 from django import forms
 from django.core.cache import cache
-from django.test import Client, TestCase
-import sys
+
 from .setup_tests import SetUpTests
 from posts.models import Group, Post
 from posts.views import POSTS_PER_PAGE
@@ -155,7 +154,7 @@ class PaginatorViewTests(SetUpTests):
                 response.context.get('page').object_list), POSTS_PER_PAGE)
 
     def test_second_page_contains_seven_records(self):
-        """Первая страница пажинатора содержит TOTAL_TEST_POSTS - 
+        """Первая страница пажинатора содержит TOTAL_TEST_POSTS -
            POSTS_PER_PAGE + POST_CREATED_IN_SETUP записей."""
         response = self.client.get(reverse('index') + '?page=2')
         self.assertEqual(len(
@@ -165,7 +164,8 @@ class PaginatorViewTests(SetUpTests):
 
 class CacheTests(SetUpTests):
     def test_index_page_is_cached(self):
-        """Новая запись на главной странице появится только после сброса кэша."""
+        """Новая запись на главной странице появится
+           только после сброса кэша."""
         response = self.authorized_creator_client.get(reverse('index'))
         first_post_before = response.context['page'][0]
 
