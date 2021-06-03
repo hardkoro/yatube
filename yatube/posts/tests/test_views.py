@@ -43,7 +43,7 @@ class PostPagesTests(SetUpTests):
                 self.assertEqual(PostPagesTests.post, first_post)
 
     def test_pages_show_correct_other_context(self):
-        """Шаблон сформирован с прочим правильным контекстом."""
+        """Шаблон сформирован с правильным контекстом."""
         url_context_names = {
             reverse('group', kwargs={'slug': self.group.slug}):
                 (PostPagesTests.group, 'group'),
@@ -92,18 +92,26 @@ class PostPagesTests(SetUpTests):
 
 
 class NewPostViewTests(SetUpTests):
-    def test_new_post_shows_on_index_page(self):
-        """Созданный пост попадает на страницы index и group/<slug>/."""
-        pages_names = {
-            reverse('index'),
-            reverse('group', kwargs={'slug': self.group.slug})}
+    def test_new_post_shows_on_page(self):
+        """Созданный пост попадает на страницу."""
+        pages_clients_names = {
+            reverse('index'): self.authorized_creator_client,
+            reverse('group', kwargs={'slug': self.group.slug}):
+                self.authorized_creator_client,
+            reverse('follow_index'): self.authorized_follower_client}
 
-        for reverse_name in pages_names:
-            with self.subTest(pages_names=pages_names):
+        for reverse_name, client in pages_clients_names.items():
+            with self.subTest(reverse_name=reverse_name, client=client):
                 cache.clear()
-                response = self.authorized_creator_client.get(reverse_name)
+                response = client.get(reverse_name)
                 post = response.context.get('page').object_list[0]
                 self.assertEqual(post, self.post)
+
+    def test_new_post_does_not_show_on_unfollower_page(self):
+        """Созданный пост не попадет в ленту не-фолловера."""
+        response = self.authorized_viewer_client.get(reverse('follow_index'))
+        post = response.context.get('page').object_list.count()
+        self.assertNotEqual(post, self.post)
 
     def test_new_post_doesnt_show_on_other_group_page(self):
         """Созданный пост не попадает на страницу другой группы."""

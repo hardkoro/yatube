@@ -7,7 +7,7 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from django.contrib.auth import get_user_model
 from django.test import Client, TestCase
 
-from posts.models import Group, Post
+from posts.models import Follow, Group, Post
 
 User = get_user_model()
 
@@ -21,11 +21,17 @@ class SetUpTests(TestCase):
 
         cls.creator = User.objects.create_user(username='test_creator')
         cls.viewer = User.objects.create_user(username='test_viewer')
+        cls.follower = User.objects.create_user(username='test_follower')
 
         cls.group = Group.objects.create(
             title='Тестовая группа',
             slug='test-slug',
             description='Тестовое описание'
+        )
+
+        Follow.objects.create(
+            user=cls.follower,
+            author=cls.creator
         )
 
         small_gif = (
@@ -61,3 +67,5 @@ class SetUpTests(TestCase):
         self.authorized_viewer_client.force_login(self.viewer)
         self.authorized_creator_client = Client()
         self.authorized_creator_client.force_login(self.creator)
+        self.authorized_follower_client = Client()
+        self.authorized_follower_client.force_login(self.follower)
