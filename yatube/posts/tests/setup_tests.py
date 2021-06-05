@@ -7,7 +7,7 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from django.contrib.auth import get_user_model
 from django.test import Client, TestCase
 
-from posts.models import Follow, Group, Post
+from posts.models import Comment, Follow, Group, Post
 
 User = get_user_model()
 
@@ -29,7 +29,7 @@ class SetUpTests(TestCase):
             description='Тестовое описание'
         )
 
-        Follow.objects.create(
+        cls.follow = Follow.objects.create(
             user=cls.follower,
             author=cls.creator
         )
@@ -55,6 +55,20 @@ class SetUpTests(TestCase):
             group=cls.group,
             image=image
         )
+
+        cls.comment = Comment.objects.create(
+            post=cls.post,
+            author=cls.viewer,
+            text='Тестовый комментарий'
+        )
+
+        cls.post_kwargs = {
+            'username': cls.post.author.username,
+            'post_id': cls.post.id
+        }
+
+        cls.group_kwargs = {'slug': cls.group.slug}
+        cls.creator_kwargs = {'username': cls.creator}
 
     @classmethod
     def tearDownClass(cls):

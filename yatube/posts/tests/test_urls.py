@@ -43,7 +43,10 @@ class URLTests(SetUpTests):
             '/': 'index.html',
             f'/group/{self.group.slug}/': 'group.html',
             '/new/': 'new.html',
-            f'/{self.creator.username}/{self.post.id}/edit/': 'new.html'
+            '/follow/': 'follow.html',
+            f'/{self.creator.username}/': 'profile.html',
+            f'/{self.creator.username}/{self.post.id}/': 'post.html',
+            f'/{self.creator.username}/{self.post.id}/edit/': 'new.html',
         }
 
         for url, template in url_template_names.items():
@@ -56,18 +59,20 @@ class URLTests(SetUpTests):
         """Страница перенаправляет анонимного пользователя
            на страницу логина."""
         url_list = {
-            '/edit/',
-            '/comment/'
+            '/new/',
+            f'/{self.creator.username}/{self.post.id}/edit/',
+            f'/{self.creator.username}/{self.post.id}/comment/',
+            '/follow/',
+            f'/{self.creator.username}/follow/',
+            f'/{self.creator.username}/unfollow/'
         }
 
         for url in url_list:
-            full_url = f'/{self.creator.username}/{self.post.id}' + url
-
-            with self.subTest(full_url=full_url):
-                response = self.guest_client.get(full_url)
+            with self.subTest(url=url):
+                response = self.guest_client.get(url)
                 self.assertEqual(response.status_code, 302)
-                response = self.guest_client.get(full_url, follow=True)
-                self.assertRedirects(response, f'/auth/login/?next={full_url}')
+                response = self.guest_client.get(url, follow=True)
+                self.assertRedirects(response, f'/auth/login/?next={url}')
 
 
 class PostURLTests(SetUpTests):

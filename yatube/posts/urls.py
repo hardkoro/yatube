@@ -25,8 +25,10 @@ urlpatterns = [
     # Добавление комментария
     path("<str:username>/<int:post_id>/comment/", views.add_comment,
          name="add_comment"),
+    # Подписка на пользователя
     path("<str:username>/follow/", views.profile_follow,
          name="profile_follow"),
+    # Отписка от пользователя
     path("<str:username>/unfollow/", views.profile_unfollow,
          name="profile_unfollow"),
 ]

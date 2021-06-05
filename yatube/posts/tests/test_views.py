@@ -3,52 +3,57 @@ from django import forms
 from django.core.cache import cache
 
 from .setup_tests import SetUpTests
-from posts.models import Group, Post
+from posts.models import Group, Post, Follow
 from posts.views import POSTS_PER_PAGE
 
 TOTAL_TEST_POSTS = 17
 POST_CREATED_IN_SETUP = 1
 
 
-class PostPagesTests(SetUpTests):
+class CommonPagesTests(SetUpTests):
     def test_pages_use_correct_template(self):
         """URL-адрес использует соответствующий шаблон."""
-        templates_pages_names = {
-            'index.html': reverse('index'),
-            'group.html': (
-                reverse('group', kwargs={'slug': self.group.slug})
-            ),
-            'new.html': reverse('new_post')
+        pages_templates_names = {
+            reverse('index'): 'index.html',
+            reverse('group', kwargs=self.group_kwargs): 'group.html',
+            reverse('new_post'): 'new.html',
+            reverse('follow_index'): 'follow.html',
+            reverse('profile', kwargs=self.creator_kwargs): 'profile.html',
+            reverse('post', kwargs=self.post_kwargs): 'post.html',
+            reverse('post_edit', kwargs=self.post_kwargs): 'new.html',
         }
 
-        for template, reverse_name in templates_pages_names.items():
+        for reverse_name, template in pages_templates_names.items():
             with self.subTest(reverse_name=reverse_name):
                 cache.clear()
                 response = self.authorized_creator_client.get(reverse_name)
                 self.assertTemplateUsed(response, template)
 
-    def test_pages_show_correct_post_context(self):
-        """Шаблон сформирован с правильным контекстом постов."""
-        url_names = {
-            reverse('index'),
-            reverse('group', kwargs={'slug': self.group.slug}),
-            reverse('profile', kwargs={'username': self.creator.username})
+    def test_pages_with_posts_paginator_show_correct_context(self):
+        """Шаблон с пажинатором постов сформирован с правильным контекстом."""
+        url_client_names = {
+            reverse('index'): self.authorized_creator_client,
+            reverse('follow_index'): self.authorized_follower_client,
+            reverse('group', kwargs=self.group_kwargs):
+                self.authorized_creator_client,
+            reverse('profile', kwargs=self.creator_kwargs):
+                self.authorized_creator_client
         }
 
-        for url in url_names:
+        for url, client in url_client_names.items():
             with self.subTest(url=url):
                 cache.clear()
-                response = self.authorized_creator_client.get(url)
+                response = client.get(url)
                 first_post = response.context['page'][0]
-                self.assertEqual(PostPagesTests.post, first_post)
+                self.assertEqual(self.post, first_post)
 
-    def test_pages_show_correct_other_context(self):
+    def test_pages_show_correct_context(self):
         """Шаблон сформирован с правильным контекстом."""
         url_context_names = {
-            reverse('group', kwargs={'slug': self.group.slug}):
-                (PostPagesTests.group, 'group'),
-            reverse('profile', kwargs={'username': self.creator.username}):
-                (PostPagesTests.creator, 'author')
+            reverse('group', kwargs=self.group_kwargs):
+                (self.group, 'group'),
+            reverse('profile', kwargs=self.creator_kwargs):
+                (self.creator, 'author')
         }
 
         for url, context in url_context_names.items():
@@ -57,38 +62,48 @@ class PostPagesTests(SetUpTests):
                 context_name = context[1]
                 self.assertEqual(context[0], response.context[context_name])
 
-    def test_new_page_shows_correct_context(self):
-        """Шаблон new сформирован с правильным контекстом."""
-        url_names = {
-            reverse('new_post'),
-            reverse('post_edit',
-                    kwargs={'username': self.creator.username,
-                            'post_id': self.post.id})
-        }
-
-        form_fields = {
+    def test_pages_with_form_show_correct_context(self):
+        """Шаблон с формой сформирован с правильным контекстом."""
+        post_form_fields = {
             'text': forms.fields.CharField,
-            'group': forms.fields.ChoiceField
+            'group': forms.fields.ChoiceField,
+            'image': forms.fields.ImageField
         }
 
-        for url in url_names:
-            response = self.authorized_creator_client.get(url)
+        comment_form_fields = {
+            'text': forms.fields.CharField
+        }
+
+        url_form_field_names = {
+            reverse('new_post'): post_form_fields,
+            reverse('post_edit', kwargs=self.post_kwargs): post_form_fields,
+            reverse('post', kwargs=self.post_kwargs): comment_form_fields,
+            reverse('add_comment', kwargs=self.post_kwargs):
+                comment_form_fields
+        }
+
+        for url, form_fields in url_form_field_names.items():
+            response = self.authorized_creator_client.get(url, follow=True)
 
             for value, expected in form_fields.items():
                 with self.subTest(url=url, value=value):
                     form_field = response.context['form'].fields[value]
                     self.assertIsInstance(form_field, expected)
 
-    def test_post_page_shows_correct_context(self):
-        """Шаблон post сформирован с правильным контекстом."""
-        response = self.authorized_creator_client.get(
-            reverse('post', kwargs={'username': self.creator.username,
-                                    'post_id': self.post.id}))
-        post = response.context['post']
-        self.assertEqual(PostPagesTests.post, post)
+    def test_post_pages_show_correct_context(self):
+        """Шаблон с постом сформирован с правильным контекстом."""
+        url_names = {
+            reverse('post', kwargs=self.post_kwargs),
+            reverse('add_comment', kwargs=self.post_kwargs)
+        }
 
-        creator = response.context['author']
-        self.assertEqual(PostPagesTests.creator, creator)
+        for url in url_names:
+            response = self.authorized_creator_client.get(url, follow=True)
+            post = response.context['post']
+            self.assertEqual(self.post, post)
+
+            creator = response.context['author']
+            self.assertEqual(self.creator, creator)
 
 
 class NewPostViewTests(SetUpTests):
@@ -96,7 +111,7 @@ class NewPostViewTests(SetUpTests):
         """Созданный пост попадает на страницу."""
         pages_clients_names = {
             reverse('index'): self.authorized_creator_client,
-            reverse('group', kwargs={'slug': self.group.slug}):
+            reverse('group', kwargs=self.group_kwargs):
                 self.authorized_creator_client,
             reverse('follow_index'): self.authorized_follower_client}
 
@@ -128,17 +143,34 @@ class NewPostViewTests(SetUpTests):
         )
 
         response = self.authorized_creator_client.get(
-            reverse('group', kwargs={'slug': self.group.slug}))
+            reverse('group', kwargs=self.group_kwargs))
 
         for post in response.context.get('page').object_list:
             with self.subTest(post=post):
                 self.assertNotEqual(post, new_post)
 
 
+class NewCommentViewTests(SetUpTests):
+    def test_new_comment_shows_on_page(self):
+        """Созданный комментарий попадает на страницу."""
+        response = self.authorized_creator_client.get(
+            reverse('post', kwargs=self.post_kwargs)
+        )
+        comment = response.context.get('comments')[0]
+        self.assertEqual(comment, self.comment)
+
+
 class PaginatorViewTests(SetUpTests):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
+
+        cls.pages_names = {
+            reverse('index'),
+            reverse('follow_index'),
+            reverse('group', kwargs=cls.group_kwargs),
+            reverse('profile', kwargs=cls.creator_kwargs)
+        }
 
         for i in range(TOTAL_TEST_POSTS):
             cls.post = Post.objects.create(
@@ -149,25 +181,23 @@ class PaginatorViewTests(SetUpTests):
 
     def test_first_page_contains_ten_records(self):
         """Первая страница пажинатора содержит POSTS_PER_PAGE записей."""
-        pages_names = {
-            reverse('index'),
-            reverse('group', kwargs={'slug': self.group.slug}),
-            reverse('profile', kwargs={'username': self.creator.username})
-        }
-
-        for page in pages_names:
-            cache.clear()
-            response = self.client.get(page)
-            self.assertEqual(len(
-                response.context.get('page').object_list), POSTS_PER_PAGE)
+        for page in self.pages_names:
+            with self.subTest(page=page):
+                cache.clear()
+                response = self.authorized_follower_client.get(page)
+                self.assertEqual(len(
+                    response.context.get('page').object_list), POSTS_PER_PAGE)
 
     def test_second_page_contains_seven_records(self):
         """Первая страница пажинатора содержит TOTAL_TEST_POSTS -
            POSTS_PER_PAGE + POST_CREATED_IN_SETUP записей."""
-        response = self.client.get(reverse('index') + '?page=2')
-        self.assertEqual(len(
-            response.context.get('page').object_list),
-            TOTAL_TEST_POSTS - POSTS_PER_PAGE + POST_CREATED_IN_SETUP)
+        for page in self.pages_names:
+            with self.subTest(page=page):
+                response = self.authorized_follower_client.get(
+                    page + '?page=2')
+                self.assertEqual(len(
+                    response.context.get('page').object_list),
+                    TOTAL_TEST_POSTS - POSTS_PER_PAGE + POST_CREATED_IN_SETUP)
 
 
 class CacheTests(SetUpTests):
@@ -189,3 +219,24 @@ class CacheTests(SetUpTests):
         response = self.authorized_creator_client.get(reverse('index'))
         first_post_after = response.context['page'][0]
         self.assertNotEqual(first_post_before, first_post_after)
+
+
+class FollowTests(SetUpTests):
+    def test_follow(self):
+        """Фолловинг создаёт новую запись."""
+        follow_count = Follow.objects.count()
+        response = self.authorized_viewer_client.get(
+            reverse('profile_follow', kwargs=self.creator_kwargs), follow=True)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(Follow.objects.count(), follow_count + 1)
+
+    def test_unfollow(self):
+        """Анфолловинг удаляет запись."""
+        self.authorized_viewer_client.get(
+            reverse('profile_follow', kwargs=self.creator_kwargs), follow=True)
+        follow_count = Follow.objects.count()
+        response = self.authorized_viewer_client.get(
+            reverse('profile_unfollow', kwargs=self.creator_kwargs),
+            follow=True)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(Follow.objects.count(), follow_count - 1)

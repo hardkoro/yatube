@@ -1,15 +1,19 @@
 from .setup_tests import SetUpTests
 
 
-class PostModelTest(SetUpTests):
-    def test_post_str(self) -> None:
-        """Метод __str__ должен вернуть первые 15 символов текста поста."""
-        post = PostModelTest.post
-        value = PostModelTest.post.text[:15]
-        self.assertEqual(value, str(post))
+class ModelRecordsTest(SetUpTests):
+    def test_model_str(self):
+        """Метод __str__ должен вернуть соответствующие данные."""
+        rec_values = {
+            self.post: self.post.text[:15],
+            self.group: self.group.title,
+            self.comment: self.comment.text[:15],
+            self.follow: (
+                f'{self.follow.user.username} follows '
+                f'{self.follow.author.username}'
+            )
+        }
 
-    def test_group_str(self) -> None:
-        """Метод __str__ должен вернуть первые название группы."""
-        group = PostModelTest.group
-        value = PostModelTest.group.title
-        self.assertEqual(value, str(group))
+        for record, value in rec_values.items():
+            with self.subTest(record=record):
+                self.assertEqual(value, str(record))
