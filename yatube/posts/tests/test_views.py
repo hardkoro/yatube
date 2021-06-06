@@ -1,10 +1,11 @@
-from django.urls import reverse
 from django import forms
 from django.core.cache import cache
+from django.urls import reverse
+
+from posts.models import Follow, Group, Post
+from posts.views import POSTS_PER_PAGE
 
 from .setup_tests import SetUpTests
-from posts.models import Group, Post, Follow
-from posts.views import POSTS_PER_PAGE
 
 TOTAL_TEST_POSTS = 17
 POST_CREATED_IN_SETUP = 1
@@ -23,10 +24,10 @@ class CommonPagesTests(SetUpTests):
             reverse('post_edit', kwargs=self.post_kwargs): 'new.html',
         }
 
-        for reverse_name, template in pages_templates_names.items():
-            with self.subTest(reverse_name=reverse_name):
+        for url, template in pages_templates_names.items():
+            with self.subTest(url=url):
                 cache.clear()
-                response = self.authorized_creator_client.get(reverse_name)
+                response = self.authorized_creator_client.get(url)
                 self.assertTemplateUsed(response, template)
 
     def test_pages_with_posts_paginator_show_correct_context(self):
@@ -229,6 +230,10 @@ class FollowTests(SetUpTests):
             reverse('profile_follow', kwargs=self.creator_kwargs), follow=True)
         self.assertEqual(response.status_code, 200)
         self.assertEqual(Follow.objects.count(), follow_count + 1)
+        self.assertTrue(
+            Follow.objects.filter(
+                user=response.wsgi_request.user,
+                author=self.creator_kwargs['username']).exists())
 
     def test_unfollow(self):
         """Анфолловинг удаляет запись."""
@@ -240,3 +245,7 @@ class FollowTests(SetUpTests):
             follow=True)
         self.assertEqual(response.status_code, 200)
         self.assertEqual(Follow.objects.count(), follow_count - 1)
+        self.assertFalse(
+            Follow.objects.filter(
+                user=response.wsgi_request.user,
+                author=self.creator_kwargs['username']).exists())

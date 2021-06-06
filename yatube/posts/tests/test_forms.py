@@ -1,29 +1,28 @@
 from django.urls import reverse
 
+from posts.models import Comment, Post
+
 from .setup_tests import SetUpTests
-from posts.models import Post, Comment
 
 
 class ModelFormsTests(SetUpTests):
     def test_add_record(self):
         """Валидная форма создаёт запись."""
         model_params = {
-            (reverse('new_post'), reverse('index')): Post,
+            (reverse('new_post'), reverse('index'), Post),
             (reverse('add_comment', kwargs=self.post_kwargs),
-             reverse('post', kwargs=self.post_kwargs)): Comment,
+             reverse('post', kwargs=self.post_kwargs), Comment),
             (reverse('post', kwargs=self.post_kwargs),
-             reverse('post', kwargs=self.post_kwargs)): Comment
+             reverse('post', kwargs=self.post_kwargs), Comment)
         }
 
-        for urls, model in model_params.items():
+        for post_url, redirect_url, model in model_params:
             with self.subTest(model=model):
                 rec_count = model.objects.count()
-                url = urls[0]
-                redirect_url = urls[1]
-
                 form_data = {'text': 'Тест'}
+
                 response = self.authorized_creator_client.post(
-                    url, data=form_data, follow=True
+                    post_url, data=form_data, follow=True
                 )
 
                 self.assertRedirects(response, redirect_url)

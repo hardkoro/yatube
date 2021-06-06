@@ -1,5 +1,6 @@
-from .setup_tests import SetUpTests
 from django.core.cache import cache
+
+from .setup_tests import SetUpTests
 
 
 class URLTests(SetUpTests):
@@ -55,7 +56,7 @@ class URLTests(SetUpTests):
                 response = self.authorized_creator_client.get(url)
                 self.assertTemplateUsed(response, template)
 
-    def test_url_redirects_anonymous_on_admin_login(self):
+    def test_url_redirects_anonymous_on_login_page(self):
         """Страница перенаправляет анонимного пользователя
            на страницу логина."""
         url_list = {
@@ -76,7 +77,7 @@ class URLTests(SetUpTests):
 
 
 class PostURLTests(SetUpTests):
-    def test_post_edit_url_doesnt_exist_for_guest_user(self):
+    def test_post_edit_url_does_not_exist_for_guest_user(self):
         """Страница /<username>/<post_id>/edit/ доступна
            только автору поста."""
         client_status_code_names = {
