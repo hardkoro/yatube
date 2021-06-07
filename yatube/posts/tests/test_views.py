@@ -223,29 +223,37 @@ class CacheTests(SetUpTests):
 
 
 class FollowTests(SetUpTests):
+    def record_exists(self):
+        """Возвращает True, если viewer фолловит author
+           (существует объект Follow(viewer, creator))."""
+        return Follow.objects.filter(
+            user=self.viewer,
+            author=self.creator).exists()
+
     def test_follow(self):
         """Фолловинг создаёт новую запись."""
         follow_count = Follow.objects.count()
+        self.assertFalse(self.record_exists())
+
         response = self.authorized_viewer_client.get(
             reverse('profile_follow', kwargs=self.creator_kwargs), follow=True)
+
         self.assertEqual(response.status_code, 200)
         self.assertEqual(Follow.objects.count(), follow_count + 1)
-        self.assertTrue(
-            Follow.objects.filter(
-                user=response.wsgi_request.user,
-                author=self.creator_kwargs['username']).exists())
+        self.assertTrue(self.record_exists())
 
     def test_unfollow(self):
         """Анфолловинг удаляет запись."""
         self.authorized_viewer_client.get(
             reverse('profile_follow', kwargs=self.creator_kwargs), follow=True)
+
+        self.assertTrue(self.record_exists())
         follow_count = Follow.objects.count()
+
         response = self.authorized_viewer_client.get(
             reverse('profile_unfollow', kwargs=self.creator_kwargs),
             follow=True)
+
         self.assertEqual(response.status_code, 200)
         self.assertEqual(Follow.objects.count(), follow_count - 1)
-        self.assertFalse(
-            Follow.objects.filter(
-                user=response.wsgi_request.user,
-                author=self.creator_kwargs['username']).exists())
+        self.assertFalse(self.record_exists())
