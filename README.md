@@ -46,12 +46,6 @@ YaTube is a social network for diaries / blogs. Allows to create posts, add imag
   pip install -r requirements.txt
   ```
   
-- Create .env file:
-
-  ```
-  touch .env
-  ```
-  
 - Run server:
 
   ```
