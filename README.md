@@ -1,6 +1,6 @@
 # YaTube
 
-[![CI](https://github.com/yandex-praktikum/yatube/actions/workflows/python-app.yml/badge.svg?branch=master)](https://github.com/yandex-praktikum/yatube/actions/workflows/python-app.yml)
+[![CI](https://github.com/hardkoro/yatube/actions/workflows/python-app.yml/badge.svg?branch=master)](https://github.com/hardkoro/yatube/actions/workflows/python-app.yml)
 
 ## Description
 
